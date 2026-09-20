@@ -1,0 +1,91 @@
+# Python project for the churn ML lifecycle platform.
+# One package (`churn_platform`) holds every lifecycle component; optional extras keep
+# container images small: the inference image installs only `serving`, the monitoring
+# worker installs only `monitoring`, and the host development environment installs all.
+[project]
+name = "churn-platform"
+version = "1.0.0"
+description = "Local production-style ML lifecycle platform for 30-day subscription churn prediction"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "numpy>=2.2,<3",
+    "pandas>=2.2,<3",
+    "pyarrow>=18",
+    "scikit-learn>=1.6,<1.10",
+    "mlflow-skinny==3.16.1",
+    # MLflow serialises scikit-learn models with skops (no arbitrary pickle code on load).
+    "skops>=0.11,<1",
+    "pydantic>=2.11,<3",
+    "pyyaml>=6.0.2",
+    "psycopg[binary]>=3.2,<4",
+    "psycopg-pool>=3.2,<4",
+    "httpx>=0.28",
+]
+
+[project.optional-dependencies]
+# Online inference service (FastAPI + Prometheus instrumentation).
+serving = [
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.34,<1",
+    "prometheus-client>=0.21",
+]
+# Evidently-based drift and data-quality analysis for the monitoring worker.
+monitoring = [
+    "evidently==0.7.23",
+]
+# DVC with the S3 remote plugin (MinIO). Only needed where the pipeline runs (the host).
+pipeline = [
+    "dvc[s3]==3.67.1",
+]
+
+[project.scripts]
+churnctl = "churn_platform.cli.main:main"
+
+[dependency-groups]
+# The host environment runs every workflow (pipeline, serving tests, monitoring), so the
+# default group installs the project with all extras; `uv run` then never drops them.
+dev = [
+    "churn-platform[serving,monitoring,pipeline]",
+    "pytest>=8.4",
+    "pip-audit>=2.9",
+    "ruff>=0.13",
+    # Lets storage tests inspect MinIO buckets directly instead of trusting MLflow/DVC.
+    "boto3>=1.40",
+]
+
+[build-system]
+requires = ["uv_build>=0.12,<0.13"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = "src"
+module-name = "churn_platform"
+
+[tool.ruff]
+line-length = 130
+target-version = "py312"
+
+[tool.ruff.lint]
+# Pyflakes, syntax errors, bugbear, pyupgrade and import order.
+select = ["F", "E9", "B", "UP", "I"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: needs the running Docker Compose stack (PostgreSQL, MinIO, MLflow)",
+    "component: exercises the inference API through HTTP without external infrastructure",
+    "e2e: critical lifecycle workflows across the whole platform (slow)",
+    "operational: restarts or breaks real containers to verify runtime behavior (slow, disruptive)",
+]
+# Unit and component tests run by default. Tests that need the running stack are opt-in:
+#   uv run pytest -m integration | e2e | operational
+addopts = "-m 'not integration and not e2e and not operational' --strict-markers"
+filterwarnings = [
+    "ignore::DeprecationWarning:mlflow.*",
+    # Raised inside pandas 2.3 when combined with NumPy 2.5; not caused by project code.
+    "ignore:The 'generic' unit for NumPy timedelta:DeprecationWarning",
+    # Third-party deprecations inside Starlette's test client.
+    "ignore::DeprecationWarning:starlette.*",
+    "ignore:Using `httpx` with `starlette.testclient`",
+]

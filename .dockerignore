@@ -1,0 +1,14 @@
+# Only the package source, lock file and configuration are needed inside images.
+.git
+.venv
+.tools
+.dvc
+.pytest_cache
+.runtime
+.env
+data
+artifacts
+reports
+docs
+tests
+**/__pycache__

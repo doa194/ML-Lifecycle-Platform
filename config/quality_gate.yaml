@@ -1,0 +1,38 @@
+# Quality gate: the promotion policy a candidate must pass to become a challenger.
+#
+# The gate evaluates the candidate AND the current champion on the same held-out data (the
+# candidate's test period), so the comparison is fair even when the world has changed.
+# Every check must pass. Accuracy is recorded but never used: with ~15% churners a model
+# that never predicts churn would still look 85% "accurate".
+
+absolute:
+  f1_min: 0.40          # primary metric
+  recall_min: 0.50      # share of churners the model catches
+  roc_auc_min: 0.75     # ranking quality, independent of the threshold
+
+segments:
+  # Critical customer groups. Segments with too few rows (training.yaml min_segment_rows)
+  # or only one class are reported but not enforced.
+  columns: [plan_tier, contract_type, tenure_segment]
+  # Every reliable segment must keep catching at least this share of its churners.
+  recall_min: 0.25
+  # Overall improvement must not hide a loss for one group of customers. Segments are
+  # compared on the primary metric (F1): a model that trades some recall for much better
+  # precision in a segment can be the better model, and recall is already protected by
+  # the absolute floor above.
+  max_f1_drop_vs_champion: 0.08
+
+champion_comparison:
+  # candidate - champion, measured on the same data. Negative values tolerate a small
+  # regression (noise); a positive value would demand a real improvement.
+  min_f1_delta: -0.01
+  min_roc_auc_delta: -0.01
+
+operational:
+  # The model must load from the registry, match its recorded fingerprint and predict a
+  # single row fast enough for online serving.
+  max_p95_latency_ms: 50
+
+approval:
+  # When true, promotion additionally requires `churnctl model promote --approved-by <name>`.
+  manual_approval_required: false

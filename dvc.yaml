@@ -1,0 +1,104 @@
+# Reproducible data + training pipeline. DVC re-runs a stage only when its declared code,
+# parameters or input data changed, and records every output hash in dvc.lock.
+#
+# Run through the project environment so `python` is the project interpreter:
+#   uv run churnctl pipeline run      (dvc repro + dvc push)
+#   uv run dvc repro                  (pipeline only)
+stages:
+  generate:
+    cmd: python -m churn_platform.pipeline generate
+    deps:
+      - src/churn_platform/data/generator.py
+      - src/churn_platform/data/schema.py
+    params:
+      - params.yaml:
+          - dataset
+      - config/data.yaml:
+          - generation
+          - timeline
+          - profiles
+    outs:
+      - data/raw/snapshots.parquet
+      - reports/dataset.json:
+          cache: false
+
+  validate:
+    cmd: python -m churn_platform.pipeline validate
+    deps:
+      - data/raw/snapshots.parquet
+      - src/churn_platform/data/validation.py
+      - src/churn_platform/data/schema.py
+    params:
+      - params.yaml:
+          - dataset
+      - config/data.yaml:
+          - validation
+          - generation.label_window_days
+    outs:
+      - reports/data_validation.json:
+          cache: false
+
+  prepare:
+    cmd: python -m churn_platform.pipeline prepare
+    deps:
+      - data/raw/snapshots.parquet
+      # Depending on the validation report orders prepare after a passing validation.
+      - reports/data_validation.json
+      - src/churn_platform/data/preparation.py
+    outs:
+      - data/prepared/snapshots.parquet
+
+  split:
+    cmd: python -m churn_platform.pipeline split
+    deps:
+      - data/prepared/snapshots.parquet
+      - src/churn_platform/data/splitting.py
+    params:
+      - config/data.yaml:
+          - split
+    outs:
+      - data/splits/train.parquet
+      - data/splits/validation.parquet
+      - data/splits/test.parquet
+    metrics:
+      - reports/split.json:
+          cache: false
+
+  # Trains every configured algorithm and logs each as an MLflow run. Note that the test
+  # split is deliberately NOT a dependency: model selection never sees test data.
+  train:
+    cmd: python -m churn_platform.pipeline train
+    deps:
+      - data/splits/train.parquet
+      - data/splits/validation.parquet
+      - src/churn_platform/features
+      - src/churn_platform/training/algorithms.py
+      - src/churn_platform/training/cycle.py
+      - src/churn_platform/training/metrics.py
+      - src/churn_platform/tracking/model_io.py
+    params:
+      - config/training.yaml:
+          - random_state
+          - selection_metric
+          - threshold_search
+          - new_customer_months
+          - algorithms
+    outs:
+      - reports/training_summary.json:
+          cache: false
+
+  evaluate:
+    cmd: python -m churn_platform.pipeline evaluate
+    deps:
+      - reports/training_summary.json
+      - data/splits/test.parquet
+      - src/churn_platform/training/evaluation.py
+      - src/churn_platform/training/metrics.py
+    params:
+      - config/training.yaml:
+          - evaluation
+          - reference
+          - new_customer_months
+    metrics:
+      - reports/evaluation.json:
+          cache: false

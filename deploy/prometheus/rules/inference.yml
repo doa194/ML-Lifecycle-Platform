@@ -1,0 +1,41 @@
+# Alert rules for the inference service. They are evaluated by Prometheus and visible on
+# its Alerts page; no Alertmanager is deployed locally, so nothing is sent anywhere.
+groups:
+  - name: inference
+    rules:
+      - alert: InferenceDown
+        expr: up{job="inference"} == 0
+        for: 1m
+        labels: {severity: critical}
+        annotations:
+          summary: Prometheus cannot scrape the inference service.
+
+      - alert: ChampionNotLoaded
+        expr: max(churn_model_loaded) == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: The inference service is alive but has no verified champion model (not ready).
+
+      - alert: HighPredictionErrorRate
+        expr: |
+          sum(rate(churn_http_requests_total{route="/predict",status=~"5.."}[5m]))
+            / clamp_min(sum(rate(churn_http_requests_total{route="/predict"}[5m])), 1e-9) > 0.05
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: More than 5% of prediction requests fail with a server error.
+
+      - alert: HighPredictionLatency
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(churn_http_request_duration_seconds_bucket{route="/predict"}[5m]))) > 0.25
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: p95 prediction latency is above 250 ms.
+
+      - alert: ObservationsNotRecorded
+        expr: increase(churn_observation_write_failures_total[5m]) > 0
+        labels: {severity: warning}
+        annotations:
+          summary: Predictions could not be written to PostgreSQL; monitoring will have gaps.

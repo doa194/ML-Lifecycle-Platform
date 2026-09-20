@@ -1,0 +1,297 @@
+schema: '2.0'
+stages:
+  generate:
+    cmd: python -m churn_platform.pipeline generate
+    deps:
+    - path: src/churn_platform/data/generator.py
+      hash: md5
+      md5: 35aee998527bf3537ad4968dc4cbb3af
+      size: 9587
+    - path: src/churn_platform/data/schema.py
+      hash: md5
+      md5: fa9a73fee45c882a502d81a35e37ced7
+      size: 3521
+    params:
+      params.yaml:
+        dataset:
+          as_of: '2026-01-01'
+      config/data.yaml:
+        generation:
+          seed: 20260101
+          rows: 12000
+          window_days: 365
+          label_window_days: 30
+        profiles:
+          baseline:
+            plan_mix:
+              basic: 0.45
+              standard: 0.35
+              premium: 0.2
+            contract_mix:
+              monthly: 0.55
+              annual: 0.3
+              two_year: 0.15
+            base_charge:
+              basic: 19.0
+              standard: 39.0
+              premium: 69.0
+            price_increase_rate: 0.1
+            price_increase_pct:
+            - 0.04
+            - 0.1
+            autopay_rate: 0.62
+            payment_failure_rate: 0.15
+            usage_hours_median: 22.0
+            usage_trend_mean: 0.0
+            usage_trend_sd: 0.15
+            login_gap_scale: 1.0
+            support_ticket_rate: 0.6
+            complaint_share: 0.25
+            resolution_hours_median: 18.0
+            feature_adoption_rate: 0.45
+            churn_model:
+              intercept: 0.45
+              new_customer_months: 6
+              new_customer: 1.0
+              tenure_log: -0.45
+              contract:
+                monthly: 1.2
+                annual: 0.0
+                two_year: -1.2
+              recent_price_increase: 0.8
+              charge_per_10: 0.12
+              autopay: -0.5
+              payment_failures: 0.55
+              late_payments: 0.25
+              usage_log: -0.7
+              days_since_login_per_10: 0.4
+              usage_trend: -2.5
+              complaints: 0.7
+              resolution_per_24h: 0.3
+              features_adopted: -0.2
+          pricing_shift:
+            extends: baseline
+            plan_mix:
+              basic: 0.4
+              standard: 0.38
+              premium: 0.22
+            price_increase_rate: 0.55
+            price_increase_pct:
+            - 0.15
+            - 0.3
+            payment_failure_rate: 0.45
+            support_ticket_rate: 0.8
+            churn_model:
+              intercept: 0.15
+              contract:
+                monthly: 0.3
+                annual: 0.0
+                two_year: -0.3
+              recent_price_increase: 2.5
+              charge_per_10: 0.45
+              autopay: 0.3
+          engagement_shift:
+            extends: baseline
+            usage_hours_median: 13.0
+            usage_trend_mean: -0.2
+            login_gap_scale: 1.8
+            feature_adoption_rate: 0.32
+        timeline:
+        - start: '2000-01-01'
+          profile: baseline
+        - start: '2026-01-01'
+          profile: pricing_shift
+    outs:
+    - path: data/raw/snapshots.parquet
+      hash: md5
+      md5: 3ffc6b350382603348ea01d336417752
+      size: 258637
+    - path: reports/dataset.json
+      hash: md5
+      md5: a117a2cef791f53d5ae8f96569881d0a
+      size: 300
+  validate:
+    cmd: python -m churn_platform.pipeline validate
+    deps:
+    - path: data/raw/snapshots.parquet
+      hash: md5
+      md5: 3ffc6b350382603348ea01d336417752
+      size: 258637
+    - path: src/churn_platform/data/schema.py
+      hash: md5
+      md5: fa9a73fee45c882a502d81a35e37ced7
+      size: 3521
+    - path: src/churn_platform/data/validation.py
+      hash: md5
+      md5: e92a5465f59c45880135222bc18cc926
+      size: 4704
+    params:
+      params.yaml:
+        dataset:
+          as_of: '2026-01-01'
+      config/data.yaml:
+        generation.label_window_days: 30
+        validation:
+          min_rows: 5000
+          churn_rate_min: 0.05
+          churn_rate_max: 0.45
+    outs:
+    - path: reports/data_validation.json
+      hash: md5
+      md5: b84fefe90304ed89aee0f086a5d4e996
+      size: 1323
+  prepare:
+    cmd: python -m churn_platform.pipeline prepare
+    deps:
+    - path: data/raw/snapshots.parquet
+      hash: md5
+      md5: 3ffc6b350382603348ea01d336417752
+      size: 258637
+    - path: reports/data_validation.json
+      hash: md5
+      md5: b84fefe90304ed89aee0f086a5d4e996
+      size: 1323
+    - path: src/churn_platform/data/preparation.py
+      hash: md5
+      md5: 302054ab5867201bc566d328be23ebd9
+      size: 1265
+    outs:
+    - path: data/prepared/snapshots.parquet
+      hash: md5
+      md5: 3ffc6b350382603348ea01d336417752
+      size: 258637
+  split:
+    cmd: python -m churn_platform.pipeline split
+    deps:
+    - path: data/prepared/snapshots.parquet
+      hash: md5
+      md5: 3ffc6b350382603348ea01d336417752
+      size: 258637
+    - path: src/churn_platform/data/splitting.py
+      hash: md5
+      md5: 2bd2e71af0151d7b87b556faf73b0714
+      size: 3233
+    params:
+      config/data.yaml:
+        split:
+          validation_days: 90
+          test_days: 60
+          purge_days: 30
+          min_rows_per_split: 500
+    outs:
+    - path: data/splits/test.parquet
+      hash: md5
+      md5: 6359bd2d47d6e0f8bfd51ea019bad544
+      size: 61107
+    - path: data/splits/train.parquet
+      hash: md5
+      md5: 43f36ecc2f80e70cb2b443df33b5f5db
+      size: 144452
+    - path: data/splits/validation.parquet
+      hash: md5
+      md5: 2ac58c749bd95a6df83d05338818017b
+      size: 60499
+    - path: reports/split.json
+      hash: md5
+      md5: 9507bbc6630bf7ca48c35368024d313e
+      size: 515
+  train:
+    cmd: python -m churn_platform.pipeline train
+    deps:
+    - path: data/splits/train.parquet
+      hash: md5
+      md5: 43f36ecc2f80e70cb2b443df33b5f5db
+      size: 144452
+    - path: data/splits/validation.parquet
+      hash: md5
+      md5: 2ac58c749bd95a6df83d05338818017b
+      size: 60499
+    - path: src/churn_platform/features
+      hash: md5
+      md5: c5933eef422ad328e23cbe5443c0d790.dir
+      size: 12369
+      nfiles: 6
+    - path: src/churn_platform/tracking/model_io.py
+      hash: md5
+      md5: 1742a44a1ac244a8f849703828e92679
+      size: 5423
+    - path: src/churn_platform/training/algorithms.py
+      hash: md5
+      md5: c77bea78b6efe60d36b1b3581d16d3e1
+      size: 841
+    - path: src/churn_platform/training/cycle.py
+      hash: md5
+      md5: 2aeff866ed20237e6462add84ee3d61a
+      size: 7155
+    - path: src/churn_platform/training/metrics.py
+      hash: md5
+      md5: ab028f6468ee612a257231f9e825f89e
+      size: 5339
+    params:
+      config/training.yaml:
+        algorithms:
+          logistic_regression:
+            C: 0.5
+            class_weight: balanced
+            max_iter: 2000
+          random_forest:
+            n_estimators: 150
+            max_depth: 10
+            min_samples_leaf: 10
+            class_weight: balanced_subsample
+            n_jobs: 2
+          hist_gradient_boosting:
+            learning_rate: 0.05
+            max_iter: 200
+            max_leaf_nodes: 15
+            min_samples_leaf: 40
+            l2_regularization: 1.0
+            class_weight: balanced
+        new_customer_months: 6
+        random_state: 42
+        selection_metric: f1
+        threshold_search:
+          min: 0.05
+          max: 0.9
+          step: 0.01
+    outs:
+    - path: reports/training_summary.json
+      hash: md5
+      md5: 4762a22d768a0a937cc9262cef689cee
+      size: 2358
+  evaluate:
+    cmd: python -m churn_platform.pipeline evaluate
+    deps:
+    - path: data/splits/test.parquet
+      hash: md5
+      md5: 6359bd2d47d6e0f8bfd51ea019bad544
+      size: 61107
+    - path: reports/training_summary.json
+      hash: md5
+      md5: 4762a22d768a0a937cc9262cef689cee
+      size: 2358
+    - path: src/churn_platform/training/evaluation.py
+      hash: md5
+      md5: 69934a141a818758e9b4e96dea21f619
+      size: 5296
+    - path: src/churn_platform/training/metrics.py
+      hash: md5
+      md5: ab028f6468ee612a257231f9e825f89e
+      size: 5339
+    params:
+      config/training.yaml:
+        evaluation:
+          segment_columns:
+          - plan_tier
+          - contract_type
+          - tenure_segment
+          min_segment_rows: 50
+          latency_samples: 200
+        new_customer_months: 6
+        reference:
+          max_rows: 5000
+    outs:
+    - path: reports/evaluation.json
+      hash: md5
+      md5: 9ed49e057c6046385362718aae18b6f0
+      size: 3332

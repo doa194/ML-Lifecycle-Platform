@@ -1,0 +1,50 @@
+# Training cycle: which algorithms are trained, how the cycle winner is chosen and how
+# models are evaluated. Deliberately small: three classical algorithms with fixed,
+# sensible hyperparameters (no AutoML, no large searches).
+
+random_state: 42
+
+# The cycle winner is the algorithm with the best validation F1 (ties: higher ROC-AUC).
+# It becomes a *candidate* only; promotion is decided later by the quality gate.
+selection_metric: f1
+
+# Each model gets the decision threshold that maximises F1 on the validation period.
+# The threshold is stored inside the model artifact so serving uses exactly the same one.
+threshold_search:
+  min: 0.05
+  max: 0.90
+  step: 0.01
+
+# Customers younger than this are "new" (engineered feature and evaluation segment).
+new_customer_months: 6
+
+algorithms:
+  logistic_regression:
+    C: 0.5
+    class_weight: balanced
+    max_iter: 2000
+  random_forest:
+    n_estimators: 150
+    max_depth: 10
+    min_samples_leaf: 10
+    class_weight: balanced_subsample
+    n_jobs: 2
+  hist_gradient_boosting:
+    learning_rate: 0.05
+    max_iter: 200
+    max_leaf_nodes: 15
+    min_samples_leaf: 40
+    l2_regularization: 1.0
+    class_weight: balanced
+
+evaluation:
+  # Segments whose quality is reported separately (and checked by the quality gate).
+  segment_columns: [plan_tier, contract_type, tenure_segment]
+  min_segment_rows: 50
+  # Single-row prediction latency is measured on this many held-out rows.
+  latency_samples: 200
+
+# Monitoring reference: held-out test rows with the model's own predictions, logged with
+# the model so drift is always measured against the data of the model that is serving.
+reference:
+  max_rows: 5000

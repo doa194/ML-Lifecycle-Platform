@@ -1,0 +1,13 @@
+{
+  "as_of": "2026-01-01",
+  "dataset": "customer-snapshots",
+  "feature_schema_version": "1.0",
+  "first_snapshot": "2024-12-03",
+  "last_snapshot": "2025-12-02",
+  "profiles": [
+    "baseline"
+  ],
+  "raw_md5": "3ffc6b350382603348ea01d336417752",
+  "rows": 12000,
+  "seed": 20260101
+}

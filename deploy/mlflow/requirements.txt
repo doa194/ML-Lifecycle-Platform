@@ -1,0 +1,5 @@
+# Pinned dependencies for the MLflow tracking/registry server image.
+# The server version must match the `mlflow-skinny` client version in pyproject.toml.
+mlflow==3.16.1
+psycopg2-binary==2.9.13
+boto3==1.43.98

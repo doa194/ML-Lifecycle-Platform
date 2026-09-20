@@ -1,0 +1,5 @@
+# Pipeline run parameters (tracked by DVC). `dataset.as_of` is the date of the simulated
+# data-warehouse extract: the dataset contains every snapshot whose 30-day churn outcome is
+# known on that date. The retraining controller moves it forward to train on newer data.
+dataset:
+  as_of: "2026-01-01"

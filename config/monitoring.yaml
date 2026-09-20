@@ -1,0 +1,33 @@
+# ML monitoring: compares recent production observations with the reference data of the
+# model version that produced them (its held-out test rows and its own predictions).
+#
+# Immediate signals (no labels needed): data quality, feature drift, dataset drift and
+# prediction drift. Delayed signal: model performance, only once outcomes are resolved.
+# Drift says "inputs changed"; it does not prove the model got worse (concept drift) -
+# that needs the delayed performance signal.
+
+window:
+  max_observations: 1000   # current window = the newest predictions of the monitored version
+  min_observations: 200    # fewer rows -> drift statistics are too noisy, run is "insufficient data"
+
+drift:
+  # Fixed methods keep results comparable across window sizes (Evidently would otherwise
+  # switch between statistical tests and distances depending on the number of rows).
+  numerical_method: wasserstein      # normalised Wasserstein distance
+  categorical_method: jensenshannon  # Jensen-Shannon distance
+  feature_threshold: 0.1             # a feature drifted when its distance >= this value
+  dataset_drift_share: 0.25          # dataset drift when this share of features drifted
+  prediction_threshold: 0.1          # drift of the churn_probability distribution
+
+data_quality:
+  # A feature whose missing-value share rose by more than this vs. the reference is flagged.
+  max_missing_share_increase: 0.10
+  # Share of duplicate customer snapshots in the window above which data is flagged.
+  max_duplicate_share: 0.05
+
+performance:
+  min_labeled: 200          # resolved outcomes needed before performance is reported
+  max_labeled: 2000         # newest resolved observations used for the performance window
+
+worker:
+  interval_seconds: 300     # how often the monitoring worker container runs a cycle

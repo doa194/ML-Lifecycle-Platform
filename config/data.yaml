@@ -1,0 +1,99 @@
+# Synthetic customer-snapshot data: how rows are generated, validated and split.
+#
+# Each row is one active subscription customer observed on `snapshot_date`. Every feature
+# describes the customer as of that date; the label `churned_30d` says whether the customer
+# voluntarily cancelled during the 30 days after it. The dataset "as of" date lives in
+# params.yaml because the retraining controller moves it forward.
+
+generation:
+  seed: 20260101
+  rows: 12000
+  window_days: 365          # snapshot dates are spread over this many days
+  label_window_days: 30     # churn outcome horizon after each snapshot
+
+# The simulated "true world": which distribution profile applies from which date.
+# Only the data generator and the traffic/outcome simulators read this. Monitoring and
+# retraining must discover changes from data, never from this timeline.
+timeline:
+  - {start: "2000-01-01", profile: baseline}
+  - {start: "2026-01-01", profile: pricing_shift}
+
+# Distribution profiles. `baseline` defines every parameter; other profiles override a few.
+# `churn_model` holds the true (hidden) churn logic. A profile that changes it simulates
+# concept drift; a profile that only changes feature distributions simulates covariate drift.
+profiles:
+  baseline:
+    plan_mix: {basic: 0.45, standard: 0.35, premium: 0.20}
+    contract_mix: {monthly: 0.55, annual: 0.30, two_year: 0.15}
+    base_charge: {basic: 19.0, standard: 39.0, premium: 69.0}
+    price_increase_rate: 0.10
+    price_increase_pct: [0.04, 0.10]
+    autopay_rate: 0.62
+    payment_failure_rate: 0.15
+    usage_hours_median: 22.0
+    usage_trend_mean: 0.0
+    usage_trend_sd: 0.15
+    login_gap_scale: 1.0
+    support_ticket_rate: 0.6
+    complaint_share: 0.25
+    resolution_hours_median: 18.0
+    feature_adoption_rate: 0.45
+    churn_model:
+      intercept: 0.45
+      new_customer_months: 6
+      new_customer: 1.0
+      tenure_log: -0.45
+      contract: {monthly: 1.2, annual: 0.0, two_year: -1.2}
+      recent_price_increase: 0.8
+      charge_per_10: 0.12
+      autopay: -0.5
+      payment_failures: 0.55
+      late_payments: 0.25
+      usage_log: -0.7
+      days_since_login_per_10: 0.4
+      usage_trend: -2.5
+      complaints: 0.7
+      resolution_per_24h: 0.3
+      features_adopted: -0.2
+
+  # Customers face frequent, larger price increases and more payment problems and billing
+  # tickets (covariate drift). The churn logic changes too (concept drift): price now
+  # dominates, contracts protect less, and autopay customers - charged the new price without
+  # noticing - churn more instead of less. A model trained before the shift ranks poorly.
+  pricing_shift:
+    extends: baseline
+    plan_mix: {basic: 0.40, standard: 0.38, premium: 0.22}
+    price_increase_rate: 0.55
+    price_increase_pct: [0.15, 0.30]
+    payment_failure_rate: 0.45
+    support_ticket_rate: 0.8
+    churn_model:
+      intercept: 0.15
+      contract: {monthly: 0.3, annual: 0.0, two_year: -0.3}
+      recent_price_increase: 2.5
+      charge_per_10: 0.45
+      autopay: 0.3
+
+  # Product engagement falls (less usage, longer login gaps, fewer adopted features)
+  # while the churn logic stays the same: pure covariate drift.
+  engagement_shift:
+    extends: baseline
+    usage_hours_median: 13.0
+    usage_trend_mean: -0.20
+    login_gap_scale: 1.8
+    feature_adoption_rate: 0.32
+
+# Time-aware split. The newest days become the test set, the days before them the
+# validation set, and everything older the training set. `purge_days` removes rows whose
+# 30-day outcome window would overlap the next period, which prevents temporal leakage.
+split:
+  validation_days: 90
+  test_days: 60
+  purge_days: 30
+  min_rows_per_split: 500
+
+# Dataset-level quality rules applied by the `validate` stage.
+validation:
+  min_rows: 5000
+  churn_rate_min: 0.05
+  churn_rate_max: 0.45

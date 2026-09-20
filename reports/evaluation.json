@@ -1,0 +1,121 @@
+{
+  "algorithm": "logistic_regression",
+  "cycle_id": "cycle-20260919T140354Z-68eeeb",
+  "decision_threshold": 0.6,
+  "latency": {
+    "max_ms": 9.741099958773702,
+    "p50_ms": 7.249049987876788,
+    "p95_ms": 8.103215051232837
+  },
+  "model_uri": "models:/m-6b5edfe5930d43afa6975d9236c20831",
+  "overall": {
+    "accuracy": 0.8237066800602713,
+    "churn_rate": 0.13108990457056754,
+    "f1": 0.5007112375533428,
+    "fn": 85,
+    "fp": 266,
+    "positive_rate": 0.22199899547965846,
+    "pr_auc": 0.4937051620355542,
+    "precision": 0.39819004524886875,
+    "recall": 0.6743295019157088,
+    "roc_auc": 0.8476203131574866,
+    "rows": 1991,
+    "tn": 1464,
+    "tp": 176
+  },
+  "run_id": "273e9da4c7d94973ad342eb2cdb97c6a",
+  "segments": [
+    {
+      "churn_rate": 0.1265126512651265,
+      "f1": 0.5182926829268293,
+      "precision": 0.39906103286384975,
+      "recall": 0.7391304347826086,
+      "reliable": true,
+      "roc_auc": 0.8683824334684043,
+      "rows": 909,
+      "segment": "plan_tier",
+      "value": "basic"
+    },
+    {
+      "churn_rate": 0.1377551020408163,
+      "f1": 0.5037037037037037,
+      "precision": 0.41975308641975306,
+      "recall": 0.6296296296296297,
+      "reliable": true,
+      "roc_auc": 0.8395792241946088,
+      "rows": 392,
+      "segment": "plan_tier",
+      "value": "premium"
+    },
+    {
+      "churn_rate": 0.13333333333333333,
+      "f1": 0.475,
+      "precision": 0.38513513513513514,
+      "recall": 0.6195652173913043,
+      "reliable": true,
+      "roc_auc": 0.8299585575105424,
+      "rows": 690,
+      "segment": "plan_tier",
+      "value": "standard"
+    },
+    {
+      "churn_rate": 0.08019639934533551,
+      "f1": 0.3392857142857143,
+      "precision": 0.30158730158730157,
+      "recall": 0.3877551020408163,
+      "reliable": true,
+      "roc_auc": 0.7907981698017286,
+      "rows": 611,
+      "segment": "contract_type",
+      "value": "annual"
+    },
+    {
+      "churn_rate": 0.18376449598572703,
+      "f1": 0.5326460481099656,
+      "precision": 0.4122340425531915,
+      "recall": 0.7524271844660194,
+      "reliable": true,
+      "roc_auc": 0.8270889702371478,
+      "rows": 1121,
+      "segment": "contract_type",
+      "value": "monthly"
+    },
+    {
+      "churn_rate": 0.023166023166023165,
+      "f1": 0.4444444444444444,
+      "precision": 0.6666666666666666,
+      "recall": 0.3333333333333333,
+      "reliable": true,
+      "roc_auc": 0.8761528326745718,
+      "rows": 259,
+      "segment": "contract_type",
+      "value": "two_year"
+    },
+    {
+      "churn_rate": 0.09068923821039904,
+      "f1": 0.41225626740947074,
+      "precision": 0.35406698564593303,
+      "recall": 0.49333333333333335,
+      "reliable": true,
+      "roc_auc": 0.8238297872340425,
+      "rows": 1654,
+      "segment": "tenure_segment",
+      "value": "established"
+    },
+    {
+      "churn_rate": 0.3293768545994065,
+      "f1": 0.5930232558139535,
+      "precision": 0.43776824034334766,
+      "recall": 0.918918918918919,
+      "reliable": true,
+      "roc_auc": 0.7791596906641155,
+      "rows": 337,
+      "segment": "tenure_segment",
+      "value": "new"
+    }
+  ],
+  "trivial_baseline": {
+    "f1": 0.23179396092362342,
+    "roc_auc": 0.5
+  }
+}

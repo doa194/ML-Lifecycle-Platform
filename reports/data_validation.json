@@ -1,0 +1,70 @@
+{
+  "checks": [
+    {
+      "detail": "ok",
+      "name": "no_outcome_leakage_columns",
+      "passed": true
+    },
+    {
+      "detail": "ok",
+      "name": "schema_columns",
+      "passed": true
+    },
+    {
+      "detail": "ok",
+      "name": "minimum_rows",
+      "passed": true
+    },
+    {
+      "detail": "ok",
+      "name": "unique_customer_snapshots",
+      "passed": true
+    },
+    {
+      "detail": "ok",
+      "name": "required_values_present",
+      "passed": true
+    },
+    {
+      "detail": "ok",
+      "name": "categorical_domains",
+      "passed": true
+    },
+    {
+      "detail": "ok",
+      "name": "boolean_domains",
+      "passed": true
+    },
+    {
+      "detail": "ok",
+      "name": "numeric_ranges",
+      "passed": true
+    },
+    {
+      "detail": "ok",
+      "name": "complaints_within_tickets",
+      "passed": true
+    },
+    {
+      "detail": "ok",
+      "name": "resolution_time_only_with_tickets",
+      "passed": true
+    },
+    {
+      "detail": "ok",
+      "name": "binary_label",
+      "passed": true
+    },
+    {
+      "detail": "ok",
+      "name": "churn_rate_plausible",
+      "passed": true
+    },
+    {
+      "detail": "ok",
+      "name": "labels_matured",
+      "passed": true
+    }
+  ],
+  "passed": true
+}

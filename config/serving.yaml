@@ -1,0 +1,24 @@
+# Online inference service behaviour.
+
+# Risk levels are business-facing bands derived from the served model's own decision
+# threshold, so they stay consistent with `churn_prediction` for every model version:
+#   high   - probability >= decision threshold (the model predicts churn)
+#   medium - probability >= decision threshold * medium_ratio
+#   low    - everything else
+risk_levels:
+  medium_ratio: 0.6
+
+observations:
+  # What happens when a prediction cannot be written to PostgreSQL:
+  #   reject - answer 503 so the client retries; every served prediction is recorded,
+  #            which monitoring and delayed evaluation rely on (default)
+  #   serve  - return the prediction anyway and count the lost observation in metrics
+  on_persistence_failure: reject
+
+model_loading:
+  # While no model is loaded (for example MLflow was down at startup), retry this often.
+  # A model that is loaded is never replaced; a new champion needs a service restart.
+  retry_interval_seconds: 15
+
+# Largest accepted request body; a single customer snapshot is well below 2 KB.
+max_request_bytes: 16384

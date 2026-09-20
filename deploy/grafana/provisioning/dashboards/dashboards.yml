@@ -1,0 +1,11 @@
+# Loads the dashboard JSON files mounted at /var/lib/grafana/dashboards into the
+# "Churn Platform" folder. They are read-only in the UI; edit the JSON files instead.
+apiVersion: 1
+providers:
+  - name: churn-platform
+    folder: Churn Platform
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards

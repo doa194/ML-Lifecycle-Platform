@@ -1,0 +1,32 @@
+# Continuous-training policy: when monitoring results justify a retraining request, and how
+# the retraining controller handles it. Monitoring only *requests* retraining; the
+# controller retrains and the quality gate decides - nothing here deploys a model directly.
+
+policy:
+  # Never react to a handful of predictions.
+  min_observations: 500
+
+  # Drift alone triggers retraining only when it is severe: at least this share of features
+  # drifted AND the prediction distribution moved. Milder drift is recorded as "watch".
+  severe_drift_share: 0.25
+  require_prediction_drift: true
+
+  # Delayed performance (needs resolved outcomes): a real drop against the model's own test
+  # performance is the strongest reason to retrain.
+  max_f1_drop: 0.05
+  max_recall_drop: 0.10
+
+  # Retraining on broken data would bake the problem into the next model.
+  block_on_data_quality_issues: true
+
+  # Minimum time between two retraining requests for the same model.
+  cooldown_hours: 12
+
+controller:
+  # Promote automatically when the new candidate passes the quality gate (and manual
+  # approval is not required). When false, a passing candidate stays challenger.
+  auto_promote: true
+  # A request stuck in "running" longer than this is considered abandoned and may be retried.
+  stale_after_minutes: 60
+  # Push the new dataset version to the MinIO DVC remote after the pipeline ran.
+  push_data: true

@@ -1,0 +1,64 @@
+{
+  "candidates": [
+    {
+      "algorithm": "logistic_regression",
+      "decision_threshold": 0.6,
+      "fingerprint": "9c4ca4e898d5751d79d7b52eb1a9a6d78e2ae9fba4851798c427911c4b18f014",
+      "model_uri": "models:/m-6b5edfe5930d43afa6975d9236c20831",
+      "run_id": "273e9da4c7d94973ad342eb2cdb97c6a",
+      "validation": {
+        "f1": 0.5135135135135135,
+        "precision": 0.40169133192389006,
+        "recall": 0.7116104868913857,
+        "roc_auc": 0.8561988455815664
+      }
+    },
+    {
+      "algorithm": "random_forest",
+      "decision_threshold": 0.54,
+      "fingerprint": "16ecc3446344f578a03e01a9d30714993ed372731312d7d475b50cfb6cd654ef",
+      "model_uri": "models:/m-6e0e8563d1504efea986f1e7d3031778",
+      "run_id": "4fc69b1b9fd34fc4b49a9441d20671b8",
+      "validation": {
+        "f1": 0.502495840266223,
+        "precision": 0.45209580838323354,
+        "recall": 0.5655430711610487,
+        "roc_auc": 0.8445460048828839
+      }
+    },
+    {
+      "algorithm": "hist_gradient_boosting",
+      "decision_threshold": 0.67,
+      "fingerprint": "63c4672de62b919c3b8c30d9ea4e7bdc8201f8100a1f20a81ae3e5117e0c6c57",
+      "model_uri": "models:/m-4501a5e172384d33849a73825b7b8953",
+      "run_id": "78a58661533743b7a50c2c92cc362339",
+      "validation": {
+        "f1": 0.4964788732394366,
+        "precision": 0.4684385382059801,
+        "recall": 0.5280898876404494,
+        "roc_auc": 0.8388603943117284
+      }
+    }
+  ],
+  "cycle_id": "cycle-20260919T140354Z-68eeeb",
+  "cycle_run_id": "ec3abaf4d91741a6af32ee6f03c1855a",
+  "experiment_id": "1",
+  "lineage": {
+    "code.git_commit": "unavailable",
+    "code.git_dirty": "unknown",
+    "data.as_of": "2026-01-01",
+    "data.id": "customer-snapshots@2026-01-01#43f36ecc6359bd2d",
+    "data.test_md5": "6359bd2d47d6e0f8bfd51ea019bad544",
+    "data.train_md5": "43f36ecc2f80e70cb2b443df33b5f5db",
+    "data.validation_md5": "2ac58c749bd95a6df83d05338818017b",
+    "feature_schema_version": "1.0"
+  },
+  "selection_metric": "f1",
+  "winner": {
+    "algorithm": "logistic_regression",
+    "decision_threshold": 0.6,
+    "fingerprint": "9c4ca4e898d5751d79d7b52eb1a9a6d78e2ae9fba4851798c427911c4b18f014",
+    "model_uri": "models:/m-6b5edfe5930d43afa6975d9236c20831",
+    "run_id": "273e9da4c7d94973ad342eb2cdb97c6a"
+  }
+}

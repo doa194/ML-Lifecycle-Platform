@@ -1,0 +1,23 @@
+{
+  "purged_rows": 1906,
+  "test": {
+    "churn_rate": 0.1311,
+    "first_snapshot": "2025-10-04",
+    "last_snapshot": "2025-12-02",
+    "rows": 1991
+  },
+  "test_start": "2025-10-04",
+  "train": {
+    "churn_rate": 0.1303,
+    "first_snapshot": "2024-12-03",
+    "last_snapshot": "2025-06-06",
+    "rows": 6147
+  },
+  "validation": {
+    "churn_rate": 0.1365,
+    "first_snapshot": "2025-07-06",
+    "last_snapshot": "2025-09-04",
+    "rows": 1956
+  },
+  "validation_start": "2025-07-06"
+}

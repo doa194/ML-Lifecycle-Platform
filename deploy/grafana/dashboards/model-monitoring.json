@@ -1,0 +1,971 @@
+{
+  "uid": "churn-model-monitoring",
+  "title": "Churn Model Monitoring",
+  "description": "Drift, data quality and delayed performance of the served churn model, plus retraining and lifecycle history.",
+  "tags": [
+    "churn",
+    "monitoring",
+    "drift",
+    "mlops"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "refresh": "30s",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Latest monitoring result (immediate signals)",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Policy decision",
+      "description": "What the retraining policy concluded from the latest monitoring run.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "churn-ops"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "churn-ops"
+          },
+          "rawSql": "SELECT policy_decision FROM ops.monitoring_runs WHERE model_name = '$model' ORDER BY finished_at DESC LIMIT 1",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "request_retraining": {
+                  "text": "RETRAINING REQUESTED",
+                  "color": "red"
+                },
+                "blocked": {
+                  "text": "BLOCKED (see reasons)",
+                  "color": "orange"
+                },
+                "watch": {
+                  "text": "WATCH",
+                  "color": "yellow"
+                },
+                "no_action": {
+                  "text": "NO ACTION",
+                  "color": "green"
+                },
+                "insufficient_data": {
+                  "text": "INSUFFICIENT DATA",
+                  "color": "blue"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Served version monitored",
+      "description": "Each version is compared with its own reference data.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "churn-ops"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 6,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "churn-ops"
+          },
+          "rawSql": "SELECT 'v' || model_version AS version FROM ops.monitoring_runs WHERE model_name = '$model' ORDER BY finished_at DESC LIMIT 1",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Observations in window",
+      "description": "Newest predictions of the monitored version used for drift analysis.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "churn-ops"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 9,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "churn-ops"
+          },
+          "rawSql": "SELECT observation_count FROM ops.monitoring_runs WHERE model_name = '$model' ORDER BY finished_at DESC LIMIT 1",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Features drifted",
+      "description": "Share of input features whose distribution moved beyond the drift threshold.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "churn-ops"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "churn-ops"
+          },
+          "rawSql": "SELECT drift_share FROM ops.monitoring_runs WHERE model_name = '$model' ORDER BY finished_at DESC LIMIT 1",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.1
+              },
+              {
+                "color": "red",
+                "value": 0.25
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Prediction drift score",
+      "description": "Normalised Wasserstein distance between reference and production churn probabilities (threshold 0.1).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "churn-ops"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "churn-ops"
+          },
+          "rawSql": "SELECT prediction_drift_score FROM ops.monitoring_runs WHERE model_name = '$model' ORDER BY finished_at DESC LIMIT 1",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          },
+          "decimals": 3
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Data quality",
+      "description": "Missing-value increases or duplicate snapshots in the current window.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "churn-ops"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "churn-ops"
+          },
+          "rawSql": "SELECT CASE WHEN (data_quality->>'ok')::boolean THEN 'OK' ELSE 'ISSUES' END AS quality FROM ops.monitoring_runs WHERE model_name = '$model' ORDER BY finished_at DESC LIMIT 1",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "OK": {
+                  "color": "green"
+                },
+                "ISSUES": {
+                  "color": "red"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Drift over time",
+      "description": "Immediate signals: available without any outcome labels. Dashed line = 0.25 severity.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "churn-ops"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "churn-ops"
+          },
+          "rawSql": "SELECT finished_at AS \"time\", drift_share AS \"features drifted (share)\", prediction_drift_score AS \"prediction drift score\" FROM ops.monitoring_runs WHERE model_name = '$model' AND drift_share IS NOT NULL AND $__timeFilter(finished_at) ORDER BY 1",
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "showPoints": "always",
+            "fillOpacity": 10,
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.25
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "table",
+      "title": "Feature drift scores (latest run)",
+      "description": "Per-feature distance between reference and current data (>= 0.1 = drifted).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "churn-ops"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "churn-ops"
+          },
+          "rawSql": "SELECT key AS feature, round(value::numeric, 3) AS distance, CASE WHEN value::float >= 0.1 THEN 'drifted' ELSE 'stable' END AS status FROM (SELECT feature_drift_scores FROM ops.monitoring_runs WHERE model_name = '$model' ORDER BY finished_at DESC LIMIT 1) latest, jsonb_each_text(latest.feature_drift_scores) ORDER BY value::float DESC",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 10,
+      "type": "row",
+      "title": "Delayed performance (needs resolved outcomes)",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "panels": []
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Resolved outcomes",
+      "description": "Predictions of the monitored version whose 30-day outcome is known.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "churn-ops"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "churn-ops"
+          },
+          "rawSql": "SELECT labeled_count FROM ops.monitoring_runs WHERE model_name = '$model' ORDER BY finished_at DESC LIMIT 1",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Production F1",
+      "description": "F1 of the predictions actually served (empty until enough outcomes are resolved).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "churn-ops"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "churn-ops"
+          },
+          "rawSql": "SELECT (performance->>'f1')::float AS f1 FROM ops.monitoring_runs WHERE model_name = '$model' ORDER BY finished_at DESC LIMIT 1",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 3
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Test F1 at training time",
+      "description": "The same model's F1 on its held-out test period. Note: F1 also moves with the churn rate.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "churn-ops"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "churn-ops"
+          },
+          "rawSql": "SELECT (reference_performance->>'f1')::float AS f1 FROM ops.monitoring_runs WHERE model_name = '$model' ORDER BY finished_at DESC LIMIT 1",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 3
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 14,
+      "type": "stat",
+      "title": "Production ROC-AUC",
+      "description": "Ranking quality; less sensitive to the churn rate than F1.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "churn-ops"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "churn-ops"
+          },
+          "rawSql": "SELECT (performance->>'roc_auc')::float AS roc_auc FROM ops.monitoring_runs WHERE model_name = '$model' ORDER BY finished_at DESC LIMIT 1",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 3
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Production performance over time",
+      "description": "Delayed signal: only computed once outcomes are resolved.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "churn-ops"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "churn-ops"
+          },
+          "rawSql": "SELECT finished_at AS \"time\", (performance->>'f1')::float AS \"production F1\", (performance->>'recall')::float AS \"production recall\", (performance->>'roc_auc')::float AS \"production ROC-AUC\", (reference_performance->>'f1')::float AS \"test F1 (reference)\" FROM ops.monitoring_runs WHERE model_name = '$model' AND performance IS NOT NULL AND $__timeFilter(finished_at) ORDER BY 1",
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "showPoints": "always",
+            "fillOpacity": 10,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 16,
+      "type": "row",
+      "title": "Continuous training and lifecycle",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
+      "panels": []
+    },
+    {
+      "id": 17,
+      "type": "table",
+      "title": "Retraining requests",
+      "description": "Requests created by the monitoring policy or an operator, and what the controller did.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "churn-ops"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 27
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "churn-ops"
+          },
+          "rawSql": "SELECT created_at AS created, trigger, status, outcome, data_as_of::text AS data_as_of, candidate_version AS candidate, champion_version_before AS champion_before, champion_version_after AS champion_after, attempts, reasons::text AS reasons FROM ops.retraining_requests WHERE model_name = '$model' ORDER BY created_at DESC LIMIT 20",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 18,
+      "type": "table",
+      "title": "Lifecycle audit trail",
+      "description": "Registrations, gate results, promotions and rollbacks (the registry holds the current state).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "churn-ops"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 35
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "churn-ops"
+          },
+          "rawSql": "SELECT occurred_at AS time, 'v' || model_version AS version, event_type AS event, actor, details::text AS details FROM ops.lifecycle_events WHERE model_name = '$model' ORDER BY event_id DESC LIMIT 30",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "model",
+        "label": "Registered model",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "churn-ops"
+        },
+        "query": "SELECT DISTINCT model_name FROM ops.monitoring_runs ORDER BY 1",
+        "definition": "SELECT DISTINCT model_name FROM ops.monitoring_runs ORDER BY 1",
+        "current": {
+          "text": "customer-churn-classifier",
+          "value": "customer-churn-classifier"
+        },
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  }
+}

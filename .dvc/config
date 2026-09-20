@@ -1,0 +1,7 @@
+[core]
+    analytics = false
+    remote = minio
+['remote "minio"']
+    url = s3://dvc-store/churn-platform
+    endpointurl = http://127.0.0.1:9000
+    region = us-east-1

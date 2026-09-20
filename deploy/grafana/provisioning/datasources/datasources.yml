@@ -1,0 +1,29 @@
+# Provisioned data sources (read-only in the UI).
+#   Prometheus - operational metrics of the inference service
+#   Churn Ops  - monitoring results, retraining requests and lifecycle events in PostgreSQL,
+#                read through the SELECT-only `grafana_reader` role
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: 5s
+
+  - name: Churn Ops
+    uid: churn-ops
+    type: grafana-postgresql-datasource
+    access: proxy
+    url: postgres:5432
+    user: grafana_reader
+    editable: false
+    jsonData:
+      database: churn_ops
+      sslmode: disable
+      postgresVersion: 1800
+    secureJsonData:
+      password: ${GRAFANA_DB_PASSWORD}
